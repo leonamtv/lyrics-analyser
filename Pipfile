@@ -8,6 +8,8 @@ verify_ssl = true
 [packages]
 bs4 = "*"
 tensorflow = "*"
+tqdm = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.7"
