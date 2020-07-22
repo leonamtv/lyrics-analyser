@@ -7,7 +7,7 @@ import pickle
 import os
 
 from core.agents import agents
-from core.util import clean_string
+from core.util import clean_string, to_ignore
 
 from tqdm import tqdm
 from bs4 import BeautifulSoup
@@ -135,13 +135,15 @@ def tokenize_lyrics ( artist, path ):
     dump_text = ''
 
     for word in words:
-        dump_text += word + '\n'
+        if word not in to_ignore:
+            dump_text += word + '\n'
 
     output_file_name = './output/' + artist.name.capitalize().replace(' ', '') + '.txt'
 
     if not os.path.isfile ( output_file_name ):
         with open(output_file_name, 'w') as output_file:
             output_file.write(dump_text)
+        print('File written')
 
     return output_file_name
 
