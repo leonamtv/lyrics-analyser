@@ -1,14 +1,18 @@
-from core.agents import agents
-from core.util import clean_string
-
-from bs4 import BeautifulSoup
-from tqdm import tqdm
-
 import pandas as pd
+import tensorflow as tf
 
 import requests
 import random
+import pickle
 import os
+
+from core.agents import agents
+from core.util import clean_string
+
+from tqdm import tqdm
+from bs4 import BeautifulSoup
+from tensorflow import keras
+from tensorflow.keras.preprocessing.text import Tokenizer
 
 def parse_page ( artist ) :
     
@@ -76,11 +80,19 @@ def parse_csv ( artist, path ):
 
         requester = requests.session()
         requester.headers.update({ 'user-agent' : random.choice(agents)})
+        success = False
 
-        try:
-            request = requester.get( row['Link'] )
-        except requests.exceptions.ChunkedEncodingError:
-            print('Error while requesting page')
+        while not success:
+            try:
+                request = requester.get( row['Link'])
+                success = True
+            except requests.exceptions.ChunkedEncodingError:
+                print('Error while requesting page')
+                continue                
+            except requests.exceptions.ConnectionError:
+                print('Connection error')
+                requester = requests.session()
+                requester.headers.update({ 'user-agent' : random.choice(agents)})
         
         soup = BeautifulSoup( request.content, 'html.parser' )
         lyrics = soup.findAll('div', { 'class' : 'contentbox' })
@@ -96,7 +108,43 @@ def parse_csv ( artist, path ):
 
     return artist_lyrics_path
 
+def tokenize_lyrics ( artist, path ):
+
+    tokenizer_dump_path = './dump/tokenizer/' + artist.name.capitalize().replace(' ', '')
+    tokenizer_path = './dump/tokenizer/' + artist.name.capitalize().replace(' ', '') + '/tokenizer.pickle'
+
+    if os.path.isfile(tokenizer_path):
+        with open(tokenizer_path, 'rb') as handle:
+            tokenizer = pickle.load(handle)
+    else:
+        tokenizer = Tokenizer(num_words=100)
+
+    for file_path in os.listdir(path):
+        file_content = open( os.path.join( path, file_path ), 'r').read()
+        tokenizer.fit_on_texts([ file_content ])
     
+    words = tokenizer.word_index
+
+    if not os.path.isdir( tokenizer_dump_path ):
+        os.makedirs ( tokenizer_dump_path )
+
+    if not os.path.isfile(tokenizer_path):
+        with open(tokenizer_path, 'wb') as handle:
+            pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)    
+
+    dump_text = ''
+
+    for word in words:
+        dump_text += word + '\n'
+
+    output_file_name = './output/' + artist.name.capitalize().replace(' ', '') + '.txt'
+
+    if not os.path.isfile ( output_file_name ):
+        with open(output_file_name, 'w') as output_file:
+            output_file.write(dump_text)
+
+    return output_file_name
+
 
 
     
