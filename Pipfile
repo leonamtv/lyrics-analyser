@@ -11,6 +11,7 @@ tensorflow = "*"
 tqdm = "*"
 pandas = "*"
 pickle = "*"
+nltk = "*"
 
 [requires]
 python_version = "3.7"

@@ -13,6 +13,7 @@ from tqdm import tqdm
 from bs4 import BeautifulSoup
 from tensorflow import keras
 from tensorflow.keras.preprocessing.text import Tokenizer
+from nltk.corpus import wordnet as wn
 
 def parse_page ( artist ) :
     
@@ -117,13 +118,14 @@ def tokenize_lyrics ( artist, path ):
         with open(tokenizer_path, 'rb') as handle:
             tokenizer = pickle.load(handle)
     else:
-        tokenizer = Tokenizer(num_words=100)
+        tokenizer = Tokenizer(num_words=500)
 
     for file_path in os.listdir(path):
         file_content = open( os.path.join( path, file_path ), 'r').read()
         tokenizer.fit_on_texts([ file_content ])
     
     words = tokenizer.word_index
+    count = tokenizer.word_counts
 
     if not os.path.isdir( tokenizer_dump_path ):
         os.makedirs ( tokenizer_dump_path )
@@ -132,18 +134,19 @@ def tokenize_lyrics ( artist, path ):
         with open(tokenizer_path, 'wb') as handle:
             pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)    
 
-    dump_text = ''
+    dump_text = 'word;count\n'
+
+    nouns = { x.name().split('.', 1)[0] for x in wn.all_synsets('n') }
 
     for word in words:
-        if word not in to_ignore:
-            dump_text += word + '\n'
+        if word in nouns or word.lower() in nouns:
+            dump_text += word + ';' + str(count[word]) + '\n'
 
     output_file_name = './output/' + artist.name.capitalize().replace(' ', '') + '.txt'
 
     if not os.path.isfile ( output_file_name ):
         with open(output_file_name, 'w') as output_file:
             output_file.write(dump_text)
-        print('File written')
 
     return output_file_name
 
