@@ -12,6 +12,7 @@ tqdm = "*"
 pandas = "*"
 pickle = "*"
 nltk = "*"
+matplotlib = "*"
 
 [requires]
 python_version = "3.7"
